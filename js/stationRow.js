@@ -448,11 +448,14 @@ class StationRow {
         }
         
         if (data.remote_control > 0 || data.control_type == 9) {
-            description += ` a je ${data.type == 3 || data.type == 4 ? `dirigována` : `řízen${appendix} dálkově`} z pracoviště`;
+            description += ` a je ${data.type == 3 || data.type == 4 ? `dirigována` : `řízen${appendix} dálkově`}`;
         }
         if (data.remote_control > 0) {
             var remoteStation = jsonData.find(element => element.id == data.remote_control);
             if (remoteStation != null) {
+                if (data.type != 3 && data.type != 4) {
+                    description += " z pracoviště";
+                }
                 description += ` ${remoteStation.short_name}`;
             }
         }
