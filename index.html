@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="cs">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+        <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+        <script src="/js/bootstrap.bundle.min.js"></script>
+        <link rel="stylesheet" href="/assets/css/solid.min.css">
+        <link rel="stylesheet" href="/assets/css/style.css">
+        <link rel="stylesheet" href="/assets/css/hierarchy-select.min.css">
+        <script src="/js/jquery-3.6.0.min.js"></script>
+        <script src="/js/main.js"></script>
+        <script src="/js/stationRow.js"></script>
+        <script src="/js/descriptors.js"></script>
+        <script src="/js/hierarchy-select.min.js"></script>
+        <!-- <script src="https://www.google.com/recaptcha/api.js?render=6Le5JjEeAAAAAP-oiFbWfIBZipMgSe2EqFWppKVE"></script> -->
+        <title>Radiovník</title>
+    <head>
+    <body id="body">
+        <nav class="navbar navbar-expand-md navbar-dark">
+            <a class="title navbar-brand" href=".">
+                <img src="assets/icons/favicon-72x72.png" width="30" height="30" alt="">
+                Radiovník
+            </a>
+        </nav>
+        <div class="container">
+            <div class="modal fade" id="confirm-changes" tabindex="-1" data-backdrop="static" aria-labelledby="confirm-changesTitle"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="confirm-changes-form" autocomplete="on">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="confirm-changesTitle">Odeslání změn</h5>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Zavřít">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="name">Přezdívka</label>
+                                    <input type="text" class="form-control" id="name" autocomplete="nickname" minlength="4" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mail">Emailová adresa</label>
+                                    <input type="email" class="form-control" id="mail" aria-describedby="emailHelp" autocomplete="email" required>
+                                    <small id="emailHelp" class="form-text text-muted">Emailová adresa slouží pouze k identifikaci uživatele a nebude nikde zobrazena.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="description">Stručný popis provedených změn</label>
+                                    <textarea class="form-control" id="description" minlength="5" size="5" rows="3" required></textarea>
+                                </div>
+                                <div class="form-group mt-2">
+                                    <label for="description">Seznam provedených změn</label>
+                                    <ul class="overflow-auto" id="confirm-changes-changes" style="max-height: 300px"></ul>
+                                </div>
+                                <div class="error" id="confirm-changes-error"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušit</button>
+                                <button type="submit" class="btn btn-primary">Odeslat provedené změny</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div id="unsavedChanges" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+                    <div class="toast-body">
+                        Máte neuložené změny, chcete je odeslat nyní?<br>(nepotvrzené změny zůstanou uchovány i při opuštění aplikace)
+                        <div class="mt-2 pt-2 border-top">
+                            <div class="d-inline" id="send-changes-tt" title="" aria-label="" data-placement="right">
+                                <button type="button" class="btn btn-success btn-sm" id="send-changes">Odeslat změny</button>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-sm" id="delete-changes">Zahodit změny</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal fade" id="info" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-lg" id="info-dialog">
+                    <div class="modal-content" id="info-content"></div>
+                </div>
+            </div>
+
+            <div class="container">
+                <p><h1>Vítá vás aplikace Radiovník</h1></p>
+                <p>
+                    Jednoduchá offline pomůcka pro strojvedoucí obsahující základní údaje o stanicích na území ČR.<br>
+                    Většinu údajů může kdokoli editovat a byť prochází schválením, nemusí odrážet skutečný stav.<br>
+                    Autor nenese žádnou odpovědnost za správnost uvedených dat!
+                    <div class="station-not-verified">Takto označené informace jsou převzaty z SR70, nejsou ověřeny a mohou obsahovat chyby.</div>
+                </p>
+
+                <div class="input-group">
+                    <input type="text" class="form-control" id="search" placeholder="Zadejte název stanice..." autocomplete="off">
+                </div>
+                <div style="height: 2em;"></div>
+                <div class="container" id="stations">
+                </div>
+                <div style="height: 2em;"></div>
+            </div>
+        </div>
+        <footer>
+            <p class="text-light" style="margin: auto">
+                © JachyHm <script type="text/javascript">document.write(new Date().getFullYear())</script> | <a href="mailto:support@jachyhm.cz" class="text-light">support@jachyhm.cz</a>
+            </p>
+        </footer>
+    </body>
+</html>
