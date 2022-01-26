@@ -23,6 +23,17 @@
                 <img src="assets/icons/favicon-72x72.png" width="30" height="30" alt="">
                 Radiovník
             </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" style="margin-left: 40px; margin-right: 40px;">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#login">Změna ověřovacího hesla</a>
+                    </li>
+                </ul>
+            </div>
         </nav>
         <div class="container">
             <div class="modal fade" id="confirm-changes" tabindex="-1" data-backdrop="static" aria-labelledby="confirm-changesTitle"
@@ -32,9 +43,7 @@
                         <form id="confirm-changes-form" autocomplete="on">
                             <div class="modal-header">
                                 <h5 class="modal-title" id="confirm-changesTitle">Odeslání změn</h5>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Zavřít">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="form-group">
@@ -64,8 +73,30 @@
                     </div>
                 </div>
             </div>
-            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-                <div id="unsavedChanges" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+            <div class="modal fade" id="login" tabindex="-1" data-backdrop="static" aria-labelledby="loginTitle"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="login-form" autocomplete="on">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="loginTitle">Zadání ověřovacího hesla</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="password">Nové ověřovací heslo</label>
+                                    <input type="text" class="form-control" id="password" autocomplete="password" minlength="4" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Uložit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div id="unsavedChanges" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
                     <div class="toast-body">
                         Máte neuložené změny, chcete je odeslat nyní?<br>(nepotvrzené změny zůstanou uchovány i při opuštění aplikace)
                         <div class="mt-2 pt-2 border-top">
@@ -74,6 +105,14 @@
                             </div>
                             <button type="button" class="btn btn-danger btn-sm" id="delete-changes">Zahodit změny</button>
                         </div>
+                    </div>
+                </div>
+                <div id="notLoggedUser" class="toast hide align-items-center" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            Z bezpečnostních důvodů je pro zobrazení telefonních čísel vyžadováno zadání ověřovacího hesla.<br>Naleznete ho v pravém horním rohu.
+                        </div>
+                        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Zavřít"></button>
                     </div>
                 </div>
             </div>

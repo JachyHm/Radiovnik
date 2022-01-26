@@ -12,7 +12,11 @@ let confirmErrorTimeout;
 let infoTimeout;
 
 let search;
-let toast;
+let unsavedToast;
+let loginToast;
+
+let password = localStorage.getItem("password");
+let lastChannelId = -1;
 
 window.onload = () => {
     //"use strict";
@@ -26,8 +30,14 @@ window.onload = () => {
         stationsEl.appendChild(stationRows[i].innerHTML);
     }
     
-    const toastEl = document.getElementById("unsavedChanges");
-    toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+    const unsavedToastEl = document.getElementById("unsavedChanges");
+    unsavedToast = bootstrap.Toast.getOrCreateInstance(unsavedToastEl);
+
+    if (password == null) {
+        const loginToastEl = document.getElementById("notLoggedUser");
+        loginToast = bootstrap.Toast.getOrCreateInstance(loginToastEl);
+        loginToast.show();
+    }
 
     registerLocationEvents();
     if (!(/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent))) {
@@ -39,10 +49,7 @@ window.onload = () => {
 
     deleteButton = document.getElementById("delete-changes");
     deleteButton.addEventListener("click", () => {
-        savedChanges = {};
-        confirmedStations = {};
-        saveToLocalStorage();
-        toggleToast();
+        clearSavedEdits();
         redrawStations();
     });
 
@@ -50,6 +57,18 @@ window.onload = () => {
     sendButton.addEventListener("click", () => {
         $("#confirm-changes").modal('show');
         setChangesHTML();
+    });
+
+    $("#login-form").submit(function(e) {
+        e.preventDefault();
+        password = $("#password").val();
+        localStorage.setItem("password", password);
+        receiveData();
+        $("#login").modal("hide");
+        loginToast?.hide();
+    });
+    $("#login").bind("show.bs.modal", () => {
+        $("#password").val("");
     });
 
     receiveData();
@@ -79,20 +98,21 @@ window.onload = () => {
                             confirmErrorTimeout = setTimeout(function(){$("#confirm-changes-error").fadeOut();}, 20000);
                         } else {
                             $("#confirm-changes").modal('hide');
-                            $("#info-content").html("Veškeré úpravy byly úspěšně odeslány ke schválení!");
+                            $("#info-content").html("Veškeré úpravy byly úspěšně odeslány ke schválení!<br>Prosíme neodesílejte změny opakovaně, odeslané změny se projeví teprve po schválení správcem.");
                             $("#info").modal("show");
                             clearTimeout(infoTimeout);
                             infoTimeout = setTimeout(function(){$("#info").modal("hide");}, 20000);
-                            savedChanges = {};
-                            confirmedStations = {};
-                            saveToLocalStorage();
-                            toggleToast();
+                            clearSavedEdits();
                             receiveData();
                         }
                     },
                     error: function (request, status, error) {
                         clearTimeout(confirmErrorTimeout);
-                        $("#confirm-changes-error").html(request.responseJSON.message).fadeIn();
+                        if (request.responseJSON != null) {
+                            $("#confirm-changes-error").html(request.responseJSON.message).fadeIn();
+                        } else {
+                            $("#confirm-changes-error").html("Něco se nám nepovedlo, ale nezoufejte, určitě již pracujeme na nápravě.").fadeIn();
+                        }
                         confirmErrorTimeout = setTimeout(function(){$("#confirm-changes-error").fadeOut();}, 20000);
                     }
                 });
@@ -101,8 +121,16 @@ window.onload = () => {
     });
 }
 
+function clearSavedEdits() {
+    savedChanges = {};
+    confirmedStations = {};
+    lastChannelId = -1;
+    saveToLocalStorage();
+    toggleToast();
+}
+
 function receiveData() {
-    $.getJSON('/data.json', function(data) {
+    $.getJSON(`/data.json?pass=${password ?? ""}`, function(data) {
         jsonData = data.content;
         sortByDistance();
         loadFromLocalStorage();
@@ -125,9 +153,26 @@ function copyObject(oldObj) {
 }
 
 function applyPatch(object, patch) {
+    if (object == null || patch == null)
+        return;
+
     for (const key in patch) {
-        object[key] = copyObject(patch[key]);
+        if (key == "channels" || key == "removedChannels") {
+            object[key] = {...object[key], ...patch[key]};
+        } else {
+            object[key] = copyObject(patch[key]);
+        }
     }
+}
+
+function patchChannels(channels, addedChannels, removedChannels) {
+    applyPatch(channels, addedChannels);
+    
+    for (const key in removedChannels) {
+        delete channels[key];
+    }
+
+    return channels
 }
 
 function createElement(innerHTML, tag = 'div') {
@@ -271,9 +316,9 @@ function redrawStations() {
 //EDITOR FUNCTIONS
 function toggleToast() {
     if (Object.keys(confirmedStations).length > 0 || Object.keys(savedChanges).length > 0) {
-        toast.show();
+        unsavedToast.show();
     } else {
-        toast.hide();
+        unsavedToast.hide();
     }
     toggleSaveButton();
 }
@@ -300,7 +345,7 @@ function confirmStation(id) {
     saveToLocalStorage();
 }
 
-function tempEdit(id, data) {
+function tempEdit(id, data, key) {
     tempChanges[id] = data;
     toggleSaveButton();
     saveToLocalStorage();
@@ -324,12 +369,14 @@ function saveToLocalStorage() {
     localStorage.setItem("confirmedStations", JSON.stringify(confirmedStations));
     localStorage.setItem("savedChanges", JSON.stringify(savedChanges));
     localStorage.setItem("tempChanges", JSON.stringify(tempChanges));
+    localStorage.setItem("lastChannelId", lastChannelId);
 }
 
 function loadFromLocalStorage() {
     confirmedStations = JSON.parse(localStorage.getItem("confirmedStations")) ?? {};
     savedChanges = JSON.parse(localStorage.getItem("savedChanges")) ?? {};
     tempChanges = JSON.parse(localStorage.getItem("tempChanges")) ?? {};
+    lastChannelId = localStorage.getItem("lastChannelId") ?? -1;
     toggleToast();
 }
 
@@ -355,8 +402,8 @@ function compareChannels(a, b) {
     return flags;
 }
 
-function processChannelChanges(changes, id, oldChannels, newChannels) {
-    const comparer = (a, b) => {
+function processChannelChanges(changes, id, oldChannels, newChannels, removedChannels) {
+    /*const comparer = (a, b) => {
         if (a.type > b.type) {
             return 1;
         }
@@ -374,26 +421,34 @@ function processChannelChanges(changes, id, oldChannels, newChannels) {
         return 0;
     }
     oldChannels.sort(comparer);
-    newChannels.sort(comparer);
-    for (let i = 0; i < Math.max(oldChannels.length, newChannels.length); i++) {
-        const oldChannel = oldChannels[i];
-        const newChannel = newChannels[i];
+    newChannels.sort(comparer);*/
 
-        if (oldChannel == null) {
-            addOrCreateChange(changes, id, `Přidán kanál ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == newChannel.type)[1]} ${newChannel.channel} - ${newChannel.description}`);
-        } else if (newChannel == null) {
-            addOrCreateChange(changes, id, `Odebrán kanál ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == oldChannel.type)[1]} ${oldChannel.channel} - ${oldChannel.description}`);
-        } else {
+    for (const key in newChannels) {
+        if (removedChannels != null && removedChannels[key])
+            continue;
+
+        const newChannel = newChannels[key];
+        const oldChannel = oldChannels[key];
+
+        if (oldChannel != null) {
             const flags = compareChannels(oldChannel, newChannel);
-            if (flags == 1) {
+            if (flags & 1 != 0) {
                 addOrCreateChange(changes, id, `${newChannel.type == 3 ? `Změněno telefonní číslo prostředku ${newChannel.description} z ${oldChannel.channel} na ${newChannel.channel}` : `Změněn kanál prostředku ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == newChannel.type)[1]} - ${newChannel.description} z ${oldChannel.channel} na ${newChannel.channel}`}`);
-            } else if (flags == 2) {
-                addOrCreateChange(changes, id, `Změněn popis prostředku ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == newChannel.type)[1]} - ${newChannel.channel} z ${oldChannel.description} na ${newChannel.description}`);
-            } else if (flags != 0) {
-                addOrCreateChange(changes, id, `Odebrán kanál ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == oldChannel.type)[1]} ${oldChannel.channel} - ${newChannel.description}`);
-                addOrCreateChange(changes, id, `Přidán kanál ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == newChannel.type)[1]} ${newChannel.channel} - ${oldChannel.description}`);
             }
+            if (flags & 2 != 0) {
+                addOrCreateChange(changes, id, `Změněn popis prostředku ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == newChannel.type)[1]} - ${newChannel.channel} z ${oldChannel.description} na ${newChannel.description}`);
+            }
+        } else {
+            addOrCreateChange(changes, id, `Přidán kanál ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == newChannel.type)[1]} ${newChannel.channel} - ${newChannel.description}`);
         }
+    }
+
+    for (const key in removedChannels) {
+        const oldChannel = oldChannels[key] ?? newChannels[key];
+        if (oldChannel == null)
+            continue;
+
+        addOrCreateChange(changes, id, `Odebrán kanál ${CHANNEL_TYPE_DESCRIPTOR.find((obj) => obj[0] == oldChannel.type)[1]} ${oldChannel.channel} - ${oldChannel.description}`);
     }
 }
 
@@ -417,7 +472,7 @@ function buildChanges() {
         }
 
         if (station.channels != null) {
-            processChannelChanges(changes, id, copyObject(origStation.channels), copyObject(station.channels));
+            processChannelChanges(changes, id, copyObject(origStation.channels), copyObject(station.channels), station.removedChannels);
         }
     }
     

@@ -86,9 +86,10 @@ class StationRow {
             this.addChannelButton.addEventListener("click", (e) => {
                 e.preventDefault();
                 if (this.data.channels == null) {
-                    this.data.channels = copyObject(this.oldData.channels);
+                    this.data.channels = {};
                 }
-                this.data.channels.push({type: 0, channel: "", description: ""});
+                this.data.channels[lastChannelId] = {type: 0, channel: "", description: ""};
+                lastChannelId--;
                 this.isVerified = true;
                 this.onEdit(this.oldData.id, this.data);
 
@@ -152,10 +153,19 @@ class StationRow {
         this.channelsEditor.innerHTML = "";
     }
 
+    createChannelInstance(key) {
+        if (this.data.channels == null) {
+            this.data.channels = {};
+        }
+        if (this.data.channels[key] == null) {
+            this.data.channels[key] = {};
+        }
+    }
+
     loadChannels() {
-        let channels = this.data.channels ?? this.oldData.channels;
-        for (let i = 0; i < channels.length; i++) {
-            const channel = channels[i];
+        let channels = patchChannels(copyObject(this.oldData?.channels), this.data?.channels, {...this.data?.removedChannels, ...this.oldData?.removedChannels});
+        for (const key in channels) {
+            const channel = channels[key];
             let channelsItem = createElement(`<div class="row flex"></div>`);
 
             let channelTypeDiv = createElement(`<div class="col-md-2"></div>`);
@@ -163,11 +173,9 @@ class StationRow {
             channelTypeDiv.appendChild(channelType);
             channelsItem.appendChild(channelTypeDiv);
             channelType.addEventListener("change", () => {
-                if (this.data.channels == null) {
-                    this.data.channels = copyObject(this.oldData.channels);
-                    channels = this.data.channels;
-                }
-                channels[i].type = Number(channelType.value);
+                this.createChannelInstance(key);
+                
+                this.data.channels[key].type = Number(channelType.value);
                 this.isVerified = true;
                 this.onEdit(this.oldData.id, copyObject(this.data));
             });
@@ -177,10 +185,8 @@ class StationRow {
             channelCodeDiv.appendChild(channelCode);
             channelsItem.appendChild(channelCodeDiv);
             channelCode.addEventListener("input", () => {
-                if (this.data.channels == null) {
-                    this.data.channels = copyObject(this.oldData.channels);
-                    channels = this.data.channels;
-                }
+                this.createChannelInstance(key);
+
                 if (channelType.value == 0) {
                     channelCode.value = "";
                 } else if (channelType.value == 1) {
@@ -190,7 +196,7 @@ class StationRow {
                 } else {
                     channelCode.value = channelCode.value.toUpperCase().match(/^[0-9]{1,9}/);
                 }
-                channels[i].channel = channelCode.value;
+                this.data.channels[key].channel = channelCode.value;
                 this.isVerified = true;
                 this.onEdit(this.oldData.id, copyObject(this.data));
             });
@@ -200,11 +206,9 @@ class StationRow {
             channelDescriptionDiv.appendChild(channelDescription);
             channelsItem.appendChild(channelDescriptionDiv);
             channelDescription.addEventListener("input", () => {
-                if (this.data.channels == null) {
-                    this.data.channels = copyObject(this.oldData.channels);
-                    channels = this.data.channels;
-                }
-                channels[i].description = channelDescription.value;
+                this.createChannelInstance(key);
+
+                this.data.channels[key].description = channelDescription.value;
                 this.isVerified = true;
                 this.onEdit(this.oldData.id, copyObject(this.data));
             });
@@ -213,16 +217,15 @@ class StationRow {
             channelsItem.appendChild(channelDelete);
             channelDelete.addEventListener("click", (e) => {
                 e.preventDefault();
-                if (this.data.channels == null) {
-                    this.data.channels = copyObject(this.oldData.channels);
-                    channels = this.data.channels;
+                if (this.data.channels != null && this.data.channels[key] != null) {
+                    delete this.data.channels[key];
                 }
-                let i = channels.findIndex((e) => e.type == channel.type && e.channel == channel.channel && e.description == channel.description);
-                if (i > -1) {
-                    channels.splice(i, 1);
+                if (this.data.removedChannels == null) {
+                    this.data.removedChannels = {};
                 }
+                this.data.removedChannels[key] = true;
                 this.isVerified = true;
-                this.onEdit(this.oldData.id, copyObject(this.data));
+                this.onEdit(this.oldData.id, copyObject(this.data), key);
                 this.channelsEditor.removeChild(channelsItem);
             });
 
@@ -453,10 +456,7 @@ class StationRow {
         if (data.remote_control > 0) {
             var remoteStation = jsonData.find(element => element.id == data.remote_control);
             if (remoteStation != null) {
-                if (data.type != 3 && data.type != 4) {
-                    description += " z pracoviště";
-                }
-                description += ` ${remoteStation.short_name}`;
+                description += ` z pracoviště ${remoteStation.short_name}`;
             }
         }
         return description;
@@ -464,10 +464,23 @@ class StationRow {
     
     buildChannels() {
         let channels = "";
-        let channelsData = this.data.channels ?? this.oldData.channels;
-        channelsData.forEach(function(channel) {
-            channels += `<li><b>${channel.type == 0 ? "GSM-R " : channel.type == 1 ? "TRS " : channel.type == 2 ? "SIMPLEX " : "+420 "} ${channel.channel} - ${channel.description}</b></li>`;
-        });
+        let channelsData = patchChannels(copyObject(this.oldData?.channels), this.data?.channels, {...this.data?.removedChannels, ...this.oldData?.removedChannels});
+        for (const key in channelsData) {
+            const channel = channelsData[key];
+            let channelString = channel.channel;
+            if (channel.type == 3) {
+                channelString = "";
+                let src = channel.channel;
+                const gap = 3;
+
+                while (src.length > 0) {
+                    channelString = channelString + " " + src.substring(0, gap);
+                    src = src.substring(gap);
+                }
+                channelString += "</a>";
+            }
+            channels += `<li><b>${channel.type == 0 ? "GSM-R " : channel.type == 1 ? "TRS " : channel.type == 2 ? "SIMPLEX " : `<a href=tel:+420${channel.channel}>+420 `} ${channelString} - ${channel.description}</b></li>`;
+        };
         return channels;
     }
 }

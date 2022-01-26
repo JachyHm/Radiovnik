@@ -1,5 +1,5 @@
-let cacheName = "radiovnik-v3"
-let siteUrl = "https://simp.jachyhm.cz"
+let cacheName = "radiovnik-v3";
+let siteUrl = "simp.jachyhm.cz";
 let filesToCache = [
 	"/",
 	"/data.json",
@@ -28,7 +28,7 @@ let filesToCache = [
 	"/js/jquery-3.6.0.min.js",
 	"/js/main.js",
 	"/js/stationRow.js",
-]
+];
 
 self.addEventListener("install", function(e) {
 	e.waitUntil(
@@ -39,34 +39,29 @@ self.addEventListener("install", function(e) {
 })
 
 self.addEventListener("fetch", function(e) {
-	var url = e.request.url;
-	//console.log('Handling fetch event for', url);
-	var fileURI = url.substring(siteUrl.length).toLowerCase();
-	if (filesToCache.includes(fileURI) && url[8] === 's' && url[9] === 'i' && url[10] === 'm' && url[11] === 'p' &&
-		url[12] === '.' && url[13] === 'j' && url[14] === 'a' && url[15] === 'c' && url[16] === 'h' && url[17] === 'y' && 
-		url[18] === 'h' && url[19] === 'm' && url[20] === '.' && url[21] === 'c' && url[22] === 'z'
-	) {
-		//console.log(`${fileURI} is file which should be cached, proceeding.`);
+	var url = new URL(e.request.url);
+	var host = url.hostname;
+	var fileURI = url.pathname;
+	const cleanURL = `${url.protocol}//${url.host}${url.pathname}`;
+	if (filesToCache.includes(fileURI) && host == siteUrl) {
 		e.respondWith(
 			caches.open(cacheName).then(function(cache) {
-				return fetch(e.request.clone()).then((response) => {
-					//console.log(` Managed to fetch online version with status ${response.status}:`, response);
+				return fetch(e.request).then((response) => {
 					if (response.status < 400) {
-						//console.log(` Caching request since it resulted with status ${response.status}`, e.request);
-						cache.put(e.request, response.clone());
+						cache.put(cleanURL, response.clone());
 					} else {
-						//console.log(` Deleting request from cache since it resulted with status ${response.status}`, e.request);
-						cache.delete(e.request);
+						cache.delete(cleanURL);
 					}
+					console.log(`Returning online version of ${cleanURL}`);
 					return response;
 				},
 				() => {
-					//console.log(` Unable to fetch online version, returning cached.`);
-					return cache.match(e.request);
+					console.log(`Returning cached version of ${cleanURL}`);
+					return cache.match(cleanURL);
 				});
 			})
 		)
 	} else {
-		//console.log(`${fileURI} isn't file which should be cached, fallback to default behaviour.`);
+		console.log(`Fallback to default behaviour for ${cleanURL}`);
 	}
 })

@@ -53,3 +53,24 @@ function applyStationPatch(&$data, $patch)
     }
     $data["verified"] = true;
 }
+
+function applyChannelPatch(&$data, $patch) 
+{
+    if (isset($patch["type"])) {
+        $data["type"] = $patch["type"];
+    }
+    if (isset($patch["channel"])) {
+        $data["channel"] = $patch["channel"];
+    }
+    if (isset($patch["description"])) {
+        $data["description"] = $patch["description"];
+    }
+    if (isset($patch["sr70"])) {
+        $data["sr70"] = $patch["sr70"];
+    }
+    $data["verified"] = true;
+}
+
+function IsNullOrEmptyString($str){
+    return ($str === null || trim($str) === '');
+}

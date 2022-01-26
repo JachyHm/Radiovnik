@@ -25,25 +25,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $changes = json_decode($_POST["changes"]);
                     $confirms = json_decode($_POST["confirms"]);
 
-                    $sql = $mysqli->prepare('INSERT INTO `transactions`(`ip_address`, `email`, `user`, `comment`) VALUES (?, ?, ?, ?);');
+                    $sql = $mysqli->prepare('INSERT INTO `transactions`(`ip_address`, `email`, `user`, `comment`, `last_id`) VALUES (?, ?, ?, ?, -1);');
                     $sql->bind_param("ssss", $ip, $email, $user, $comment);
                     $sql->execute();
+                    $transaction_id = $mysqli->insert_id;
+
+                    $result = $mysqli->query('SELECT `last_id` FROM `transactions` ORDER BY `last_id` DESC LIMIT 1;');
+                    if (empty($result)) {
+                        flushResponse(500, "Nepovedlo se získat unikátní identifikátor stanice, zkuste to prosím později!", $mysqli);
+                    }
+                    $row = $result->fetch_assoc();
+                    $last_id = $row["last_id"];
                 
                     $result = new stdClass();
-                    $transaction_id = $mysqli->insert_id;
                     $sql = $mysqli->prepare('INSERT INTO `transactions_changes`(`id`, `type`, `control_type`, `remote_control`, `transaction_id`) VALUES (?, ?, ?, ?, ?);');
-                    $sql2 = $mysqli->prepare('INSERT INTO `transactions_channels`(`sr70`, `type`, `channel`, `description`, `transaction_id`) VALUES (?, ?, ?, ?, ?);');
+                    $sql2 = $mysqli->prepare('INSERT INTO `transactions_channels`(`sr70`, `type`, `channel`, `description`, `gid`, `transaction_id`) VALUES (?, ?, ?, ?, ?, ?);');
                     foreach ($changes as $id => $station) {
                         $sql->bind_param("iiiii", $id, $station->type, $station->control_type, $station->remote_control, $transaction_id);
                         $sql->execute();
                         $result->$id = new stdClass();
                         $result->$id->channels = array();
-                        foreach ($station->channels as $channel) {
-                            $sql2->bind_param("iissi", $id, $channel->type, $channel->channel, $channel->description, $transaction_id);
+                        $result->$id->removedChannels = array();
+                        foreach ($station->channels as $key => $channel) {
+                            if ($key < 0) {
+                                $last_id++;
+                                $key = $last_id;
+                            }
+                            $sql2->bind_param("iissii", $id, $channel->type, $channel->channel, $channel->description, $key, $transaction_id);
                             $sql2->execute();
                             array_push($result->$id->channels, $channel);
                         }
+                        foreach ($station->removedChannels as $key => $_) {
+                            if ($key > 0) {
+                                $type = -1;
+                                $empty = "";
+                                $sql2->bind_param("iissii", $id, $type, $empty, $empty, $key, $transaction_id);
+                                $sql2->execute();
+                                array_push($result->$id->removedChannels, $key);
+                            }
+                        }
                     }
+
+                    $mysqli->query("UPDATE `transactions` SET `last_id` = $last_id WHERE `id` = $transaction_id;");
 
                     $sql = $mysqli->prepare('INSERT INTO `transactions_confirms` (`sr70`, `transaction_id`) VALUES (?, ?);');
                     foreach ($confirms as $id => $_) {

@@ -2,6 +2,10 @@
 require_once "../simp_db.php";
 require_once "utils.php";
 
+if (!(isset($_GET["pass"]) && $_GET["pass"] == $pass) && !(isset($_POST["pass"]) && $_POST["pass"] == $pass)) {
+    flushResponse(403, "Neplatné heslo!", $mysqli);
+}
+
 try {
     $mysqli->query('DELETE FROM `stations`;');
     $mysqli->query('DELETE FROM `channels`;');
@@ -47,40 +51,37 @@ try {
     $confirms_sql->close();
 
     $channels = array();
-    $channels_sql = $mysqli->prepare('SELECT ch.`sr70`, ch.`type`, ch.`channel`, ch.`description`, ch.`transaction_id` FROM `transactions_channels` ch LEFT JOIN `transactions` t ON ch.`transaction_id` = t.`id` WHERE t.`approved` ORDER BY t.`timestamp` DESC, ch.`sr70` ASC;');
+    $temp_channels = array();
+    $channels_sql = $mysqli->prepare('SELECT ch.`sr70`, ch.`type`, ch.`channel`, ch.`description`, ch.`gid` FROM `transactions_channels` ch LEFT JOIN `transactions` t ON ch.`transaction_id` = t.`id` WHERE t.`approved` ORDER BY t.`timestamp` ASC;');
     $channels_sql->execute();
     $channels_result = $channels_sql->get_result();
     if (!empty($channels_result)) {
-        if ($channels_result->num_rows > 0) {
-            $lastId = "";
-            while ($channel = $channels_result->fetch_assoc()) {
-                $id = $channel["sr70"];
-                if (!array_key_exists($id, $channels)) {
-                    $channels[$id] = array();
-                    $newChannel = new stdClass();
-                    $newChannel->type = $channel["type"];
-                    $newChannel->channel = $channel["channel"];
-                    $newChannel->description = $channel["description"];
-                    array_push($channels[$id], $newChannel);
-                    $lastId = $id.$channel["transaction_id"];
-                } else if ($lastId == "" || $id.$channel["transaction_id"] == $lastId) {
-                    $newChannel = new stdClass();
-                    $newChannel->type = $channel["type"];
-                    $newChannel->channel = $channel["channel"];
-                    $newChannel->description = $channel["description"];
-                    array_push($channels[$id], $newChannel);
+        while ($channel = $channels_result->fetch_assoc()) {
+            $gid = $channel["gid"];
+            if (!array_key_exists($gid, $channels)) {
+                if (array_key_exists($gid, $temp_channels)) {
+                    $channels[$gid] = $temp_channels[$gid];
+                } else {
+                    $channels[$gid] = array();
                 }
+            }
+            if (!array_key_exists($gid, $temp_channels)) {
+                $temp_channels[$gid] = array();
+            }
+            if ($channel["type"] == -1) {
+                unset($channels[$gid]);
+            } else {
+                applyChannelPatch($channels[$gid], $channel);
+                applyChannelPatch($temp_channels[$gid], $channel);
             }
         }
     }
     $channels_sql->close();
 
-    $write_sql = $mysqli->prepare('INSERT INTO `channels` (`sr70`, `type`, `channel`, `description`) VALUES (?, ?, ?, ?);');
-    foreach ($channels as $id => $station) {
-        foreach ($station as $channel) {
-            $write_sql->bind_param("iiss", $id, $channel->type, $channel->channel, $channel->description);
-            $write_sql->execute();
-        }
+    $write_sql = $mysqli->prepare('INSERT INTO `channels` (`sr70`, `type`, `channel`, `description`, `gid`) VALUES (?, ?, ?, ?, ?);');
+    foreach ($channels as $gid => $channel) {
+        $write_sql->bind_param("iissi", $channel["sr70"], $channel["type"], $channel["channel"], $channel["description"], $gid);
+        $write_sql->execute();
     }
     $write_sql->close();
     
