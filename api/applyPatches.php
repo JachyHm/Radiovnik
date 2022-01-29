@@ -2,7 +2,7 @@
 require_once "../simp_db.php";
 require_once "utils.php";
 
-if (!(isset($_GET["pass"]) && $_GET["pass"] == $pass) && !(isset($_POST["pass"]) && $_POST["pass"] == $pass)) {
+if (!(isset($_GET["pass"]) && $_GET["pass"] == $updatePassword) && !(isset($_POST["pass"]) && $_POST["pass"] == $updatePassword)) {
     flushResponse(403, "Neplatné heslo!", $mysqli);
 }
 

@@ -24,6 +24,7 @@ $mysqli->set_charset("utf8");
 
 $captcha_secret = <SECRET_KEY>;
 $phonesPassword = <PHONES_PASSWORD>;
+$updatePassword = <UPDATE_PASSWORD>;
 
 if (!empty($_SERVER['HTTP_CLIENT_IP'])) { //check ip from share internet
     $ip=$_SERVER['HTTP_CLIENT_IP'];

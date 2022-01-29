@@ -162,6 +162,31 @@ class StationRow {
         }
     }
 
+    setHints(element, channelType) {
+        switch (channelType) {
+            case 0:
+                element.setAttribute("aria-label", "Zkrácená volba GSM-R");
+                element.setAttribute("title", "Zkrácená volba GSM-R");
+                element.setAttribute("placeholder", "Zkrácená volba GSM-R");
+                break;
+            case 1:
+                element.setAttribute("aria-label", "Číslo stuhy (např. 60C)");
+                element.setAttribute("title", "Číslo stuhy (např. 60C)");
+                element.setAttribute("placeholder", "Číslo stuhy (např. 60C)");
+                break;
+            case 2:
+                element.setAttribute("aria-label", "Číslo simplexu (např. 21)");
+                element.setAttribute("title", "Číslo simplexu (např. 21)");
+                element.setAttribute("placeholder", "Číslo simplexu (např. 21)");
+                break;
+            case 3:
+                element.setAttribute("aria-label", "Telefonní číslo");
+                element.setAttribute("title", "Telefonní číslo");
+                element.setAttribute("placeholder", "Telefonní číslo");
+                break;
+        }
+    }
+
     loadChannels() {
         let channels = patchChannels(copyObject(this.oldData?.channels), this.data?.channels, {...this.data?.removedChannels, ...this.oldData?.removedChannels});
         for (const key in channels) {
@@ -170,31 +195,34 @@ class StationRow {
 
             let channelTypeDiv = createElement(`<div class="col-md-2"></div>`);
             let channelType = this.getSelectHTML(CHANNEL_TYPE_DESCRIPTOR, "Druh spojení", channel.type);
+            let channelCodeDiv = createElement(`<div class="col-md-3"></div>`);
+            let channelCode = createElement(`<input type="text" class="form-control" maxlength="10" size="10" data-placement="right" value="${channel.channel}">`);
             channelTypeDiv.appendChild(channelType);
             channelsItem.appendChild(channelTypeDiv);
             channelType.addEventListener("change", () => {
                 this.createChannelInstance(key);
                 
-                this.data.channels[key].type = Number(channelType.value);
+                const val = Number(channelType.value);
+                this.setHints(channelCode, val);
+                this.data.channels[key].type = val;
                 this.isVerified = true;
                 this.onEdit(this.oldData.id, copyObject(this.data));
             });
+            this.setHints(channelCode, channel.type);
     
-            let channelCodeDiv = createElement(`<div class="col-md-3"></div>`);
-            let channelCode = createElement(`<input type="text" class="form-control" maxlength="10" size="10" aria-label="Číslo kanálu/telefonu" data-placement="right" title="Číslo kanálu/telefonu" value="${channel.channel}">`);
             channelCodeDiv.appendChild(channelCode);
             channelsItem.appendChild(channelCodeDiv);
             channelCode.addEventListener("input", () => {
                 this.createChannelInstance(key);
 
                 if (channelType.value == 0) {
-                    channelCode.value = "";
+                    channelCode.value = channelCode.value.match(/^[0-9]{1,4}/);
                 } else if (channelType.value == 1) {
                     channelCode.value = channelCode.value.toUpperCase().match(/^[0-9]{1,2}[A-C]{1}|^[0-9]{1,2}/);
                 } else if (channelType.value == 2) {
-                    channelCode.value = channelCode.value.toUpperCase().match(/^[0-9]{1,2}/);
+                    channelCode.value = channelCode.value.match(/^[0-9]{1,2}/);
                 } else {
-                    channelCode.value = channelCode.value.toUpperCase().match(/^[0-9]{1,9}/);
+                    channelCode.value = channelCode.value.match(/^[0-9]{1,9}/);
                 }
                 this.data.channels[key].channel = channelCode.value;
                 this.isVerified = true;
@@ -202,7 +230,7 @@ class StationRow {
             });
 
             let channelDescriptionDiv = createElement(`<div class="col-md-6"></div>`);
-            let channelDescription = createElement(`<input type="text" class="form-control" maxlength="100" size="100" aria-label="Stručný popis (100 znaků)" data-placement="right" title="Stručný popis (100 znaků)" value="${channel.description}">`);
+            let channelDescription = createElement(`<input type="text" class="form-control" maxlength="100" size="100" aria-label="Stručný popis (max 100 znaků)" data-placement="right" title="Stručný popis (max 100 znaků)" placeholder="Stručný popis (max 100 znaků)" value="${channel.description}">`);
             channelDescriptionDiv.appendChild(channelDescription);
             channelsItem.appendChild(channelDescriptionDiv);
             channelDescription.addEventListener("input", () => {
