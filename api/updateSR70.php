@@ -26,7 +26,7 @@ function TrimPhonenumber($phoneNumber)
     return trim(preg_replace("/\D/", '', $phoneNumber));
 }
 
-if (isset($_POST["secret"]) && $_POST["secret"] === $pass) {
+if (isset($_POST["secret"]) && $_POST["secret"] === $updatePassword) {
     if (isset($_FILES["sr70"])) {
         if (strtolower(pathinfo($_FILES['sr70']['name'], PATHINFO_EXTENSION)) == "csv") {
             $tmp_name = $_FILES['sr70']['tmp_name'];

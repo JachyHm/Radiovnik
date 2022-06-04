@@ -484,7 +484,7 @@ class StationRow {
         if (data.remote_control > 0) {
             var remoteStation = jsonData.find(element => element.id == data.remote_control);
             if (remoteStation != null) {
-                description += ` z pracoviště ${remoteStation.short_name}`;
+                description += ` z pracoviště <a href="#" onclick="document.getElementById('search').value = '${remoteStation.name}'; redrawStations()">${remoteStation.short_name}</a>`;
             }
         }
         return description;
@@ -507,7 +507,7 @@ class StationRow {
                 }
                 channelString += "</a>";
             }
-            channels += `<li><b>${channel.type == 0 ? "GSM-R " : channel.type == 1 ? "TRS " : channel.type == 2 ? "SIMPLEX " : `<a href=tel:+420${channel.channel}>+420 `} ${channelString} - ${channel.description}</b></li>`;
+            channels += `<li><b>${channel.type == 0 ? "GSM-R " : channel.type == 1 ? "TRS " : channel.type == 2 ? "SIMPLEX " : `<a href=tel:+420${channel.channel}>+420 `} ${channelString} ${channel.description.trim().length > 0 ? `- ${channel.description}`: ""}</b></li>`;
         };
         return channels;
     }
