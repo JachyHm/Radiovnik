@@ -30,6 +30,12 @@ let filesToCache = [
 	"/js/stationRow.js",
 ];
 
+AbortSignal.timeout ??= function timeout(ms) {
+	const ctrl = new AbortController()
+	setTimeout(() => ctrl.abort(), ms)
+	return ctrl.signal
+}
+
 self.addEventListener("install", function(e) {
 	e.waitUntil(
 		caches.open(cacheName).then(function(cache) {
@@ -43,10 +49,10 @@ self.addEventListener("fetch", function(e) {
 	var host = url.hostname;
 	var fileURI = url.pathname;
 	const cleanURL = `${url.protocol}//${url.host}${url.pathname}`;
-	if (filesToCache.includes(fileURI) && host == siteUrl) {
+	if (host == siteUrl && filesToCache.includes(fileURI)) {
 		e.respondWith(
 			caches.open(cacheName).then(function(cache) {
-				return fetch(e.request).then((response) => {
+				return fetch(e.request, { signal: AbortSignal.timeout(5000) }).then((response) => {
 					if (response.status < 400) {
 						cache.put(cleanURL, response.clone());
 					} else {
@@ -57,6 +63,9 @@ self.addEventListener("fetch", function(e) {
 				},
 				() => {
 					console.log(`Returning cached version of ${cleanURL}`);
+					return cache.match(cleanURL);
+				}).catch((err) => {
+					console.log(`Fetch vailed with "${err}"\r\nReturning cached version of ${cleanURL}`);
 					return cache.match(cleanURL);
 				});
 			})
