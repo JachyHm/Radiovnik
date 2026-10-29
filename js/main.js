@@ -1,5 +1,8 @@
 let NUM_STATIONS = 10;
 
+const BROWSER_PREFIXES = ['moz', 'ms', 'o', 'webkit'];
+let isVisible = true; // internal flag, defaults to true
+
 let lon = 0;
 let lat = 0;
 let jsonData = [];
@@ -17,6 +20,10 @@ let loginToast;
 
 let password = localStorage.getItem("password");
 let lastChannelId = -1;
+
+let browserPrefix;
+let hiddenPropertyName;
+let visibilityEventName;
 
 window.onload = () => {
     //"use strict";
@@ -84,6 +91,31 @@ window.onload = () => {
 
     receiveData();
     
+    // bind and handle events
+    browserPrefix = getBrowserPrefix();
+    hiddenPropertyName = getHiddenPropertyName(browserPrefix);
+    visibilityEventName = getVisibilityEvent(browserPrefix);
+    
+    document.addEventListener(visibilityEventName, handleVisibilityChange, false);
+
+    // extra event listeners for better behaviour
+    document.addEventListener('focus', function() {
+        handleVisibilityChange(true);
+    }, false);
+
+    document.addEventListener('blur', function() {
+        handleVisibilityChange(false);
+    }, false);
+
+    window.addEventListener('focus', function() {
+        handleVisibilityChange(true);
+    }, false);
+
+    window.addEventListener('blur', function() {
+        handleVisibilityChange(false);
+    }, false);
+
+
     $("#confirm-changes-form").submit(function(e) {
         e.preventDefault();
 
@@ -151,17 +183,93 @@ function clearSavedEdits() {
     toggleToast();
 }
 
+// get the correct attribute name
+function getHiddenPropertyName(prefix) {
+  return (prefix ? prefix + 'Hidden' : 'hidden');
+}
+
+// get the correct event name
+function getVisibilityEvent(prefix) {
+  return (prefix ? prefix : '') + 'visibilitychange';
+}
+
+// get current browser vendor prefix
+function getBrowserPrefix() {
+  for (var i = 0; i < BROWSER_PREFIXES.length; i++) {
+    if(getHiddenPropertyName(BROWSER_PREFIXES[i]) in document) {
+      // return vendor prefix
+      return BROWSER_PREFIXES[i];
+    }
+  }
+
+  // no vendor prefix needed
+  return null;
+}
+
+function onVisible() {
+  // prevent double execution
+  if(isVisible) {
+    return;
+  }
+ 
+  // change flag value
+  isVisible = true;
+  receiveData();
+}
+
+function onHidden() {
+  // prevent double execution
+  if(!isVisible) {
+    return;
+  }
+
+  // change flag value
+  isVisible = false;
+}
+
+function handleVisibilityChange(forcedFlag) {
+  // forcedFlag is a boolean when this event handler is triggered by a
+  // focus or blur eventotherwise it's an Event object
+  if(typeof forcedFlag === "boolean") {
+    if(forcedFlag) {
+      return onVisible();
+    }
+
+    return onHidden();
+  }
+
+  if(document[hiddenPropertyName]) {
+    return onHidden();
+  }
+
+  return onVisible();
+}
+
 function receiveData() {
     jsonData = [];
     redrawStations();
     document.getElementById("data-loading").style.display = 'block';
-    $.getJSON(`/data.json?pass=${password ?? ""}`, function(data) {
-        jsonData = data.content;
-        sortByDistance();
-        loadFromLocalStorage();
-        redrawStations();
+    document.getElementById("data-error").style.display = 'none';
+    fetch(`/data.json?pass=${password ?? ""}`).then(response => {
+        response.json().then(data => {
+            jsonData = data.content;
+            sortByDistance();
+            loadFromLocalStorage();
+            redrawStations();
+            document.getElementById("data-loading").style.display = 'none';
+            
+            /*$("#info-content").html("Data načteny");
+            $("#info").modal("show");
+            clearTimeout(infoTimeout);
+            infoTimeout = setTimeout(function(){$("#info").modal("hide");}, 20000);*/
+            requireLocation();
+        }).catch(_ => {
+            document.getElementById("data-loading").style.display = 'none';
+            $("#data-error").html(`<h2>Selhalo načtení provozních dat aplikace.<br>Chyba ${response.status}${response.statusText ? " " + response.statusText : ""}</h2>`).fadeIn();
+        });
+    }).catch(() => {
         document.getElementById("data-loading").style.display = 'none';
-        //ac.setData(jsonData);
+        $("#data-error").html("<h2>Selhalo načtení provozních dat aplikace.</h2>").fadeIn();
     });
 }
 

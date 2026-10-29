@@ -48,7 +48,7 @@
                             <div class="modal-body">
                                 <div class="form-group">
                                     <label for="name">Přezdívka</label>
-                                    <input type="text" class="form-control" id="name" autocomplete="nickname" minlength="4" required>
+                                    <input type="text" class="form-control" id="name" autocomplete="name" minlength="4" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="mail">Emailová adresa</label>
@@ -85,7 +85,7 @@
                             <div class="modal-body">
                                 <div class="form-group">
                                     <label for="password">Nové ověřovací heslo</label>
-                                    <input type="text" class="form-control" id="password" autocomplete="password" minlength="4" required>
+                                    <input type="text" class="form-control" id="password" autocomplete="current-password" minlength="4" required>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -110,7 +110,8 @@
                 <div id="notLoggedUser" class="toast hide align-items-center" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
                     <div class="d-flex">
                         <div class="toast-body">
-                            Z bezpečnostních důvodů je pro zobrazení telefonních čísel vyžadováno zadání ověřovacího hesla v pravém horním rohu.
+                            Z bezpečnostních důvodů je pro zobrazení telefonních čísel vyžadováno zadání ověřovacího hesla v pravém horním rohu.<br>
+                            <small>Pro jeho získání kontaktujte autora aplikace na <a href="mailto:simp@jachyhm.cz">simp@jachyhm.cz</a>, nebo pod přezdívkou JachyHm na online platformách (např. FB, Discord, Instagram).</small>
                         </div>
                         <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Zavřít"></button>
                     </div>
@@ -126,10 +127,10 @@
             <div class="container">
                 <p><h1>Vítá vás aplikace Radiovník</h1></p>
                 <p>
-                    Jednoduchá offline pomůcka pro strojvedoucí obsahující základní údaje o stanicích na území ČR.<br>
+                    Jednoduchá offline pomůcka pro strojvedoucí obsahující základní kontaktní údaje o stanicích na území ČR.<br>
                     Většinu údajů může kdokoli editovat a byť prochází schválením, nemusí odrážet skutečný stav.<br>
                     Autor nenese žádnou odpovědnost za správnost uvedených dat!
-                    <div class="station-not-verified">Takto označené informace jsou převzaty z SR70, nejsou ověřeny a mohou obsahovat chyby.</div>
+                    <div class="station-not-verified">Takto označené informace jsou převzaty z SR70, nejsou ověřeny a mohou obsahovat chyby.<br>Telefonní čísla v takto označených stanicích jsou převzata z telefonního seznamu SŽ, který je v naprostém chaosu a většina tel. čísel ani neexistuje.</div>
                 </p>
 
                 <div class="input-group">
@@ -142,6 +143,7 @@
                         </svg>
                     </h2>
                 </div>
+                <div id="data-error" style="text-align:center;width: 100%;margin: 5em 0;display:none;"></div>
                 <div style="height: 2em;"></div>
                 <div class="container" id="stations">
                 </div>
@@ -150,8 +152,7 @@
             </div>
         </div>
         <footer>
-            <p class="text-light" style="margin: auto">
-                © JachyHm <script type="text/javascript">document.write(new Date().getFullYear())</script> | <a href="mailto:support@jachyhm.cz" class="text-light">support@jachyhm.cz</a>
+            <p class="text-light" style="margin: auto">v20261029.1 | © JachyHm <script type="text/javascript">document.write(new Date().getFullYear())</script> | <a href="mailto:simp@jachyhm.cz" class="text-light">support@jachyhm.cz</a>
             </p>
         </footer>
     </body>

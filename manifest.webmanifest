@@ -1,11 +1,11 @@
 {
-	"name": "Radiovník v1",
+	"name": "Radiovník v20261029.1",
 	"short_name": "Radiovník",
 	"lang": "cs",
 	"start_url": "/",
 	"id": "/",
 	"display": "standalone",
-	"orientation": "portrait",
+	"orientation": "any",
 	"icons": [
 	  {
 		"src": "assets/icons/favicon-72x72.png",

@@ -78,14 +78,20 @@ try {
     }
     $channels_sql->close();
 
+    $missingSR70 = array();
     $write_sql = $mysqli->prepare('INSERT INTO `channels` (`sr70`, `type`, `channel`, `description`, `gid`) VALUES (?, ?, ?, ?, ?);');
     foreach ($channels as $gid => $channel) {
-        $write_sql->bind_param("iissi", $channel["sr70"], $channel["type"], $channel["channel"], $channel["description"], $gid);
-        $write_sql->execute();
+        try {
+            $write_sql->bind_param("iissi", $channel["sr70"], $channel["type"], $channel["channel"], $channel["description"], $gid);
+            $write_sql->execute();
+        } catch (Exception $e) {
+            array_push($missingSR70, $channel["sr70"]);
+        }
     }
     $write_sql->close();
     
-    flushResponse(200, "Všechny změny úspěšně aplikovány!", $mysqli);
+    $missingJSON = json_encode($missingSR70);
+    flushResponse(200, "Všechny změny úspěšně aplikovány!\nChybějící SR70: $missingJSON", $mysqli);
 }
 catch (Exception $e) {
     flushResponse(500, "Nepovedlo se aplikovat provedené změny!\n$e", $mysqli);

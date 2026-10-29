@@ -27,29 +27,23 @@ try {
     $patches_sql->execute();
     $patches_result = $patches_sql->get_result();
     if (!empty($patches_result)) {
-        if ($patches_result->num_rows > 0) {
-            while ($patch = $patches_result->fetch_assoc()) {
-                if (!empty($patch_result)) {
-                    while ($patch = $patch_result->fetch_assoc()) {
-                        $query_start = "UPDATE `stations` SET `verified` = 1 ";
-                        $query = "";
+        while ($patch = $patches_result->fetch_assoc()) {
+            $query_start = "UPDATE `stations` SET `verified` = 1 ";
+            $query = "";
 
-                        if (!empty($patch["type"])) {
-                            $query .= ", `type` = {$patch["type"]} ";
-                        }
-
-                        if (!empty($patch["control_type"])) {
-                            $query .= ", `control_type` = {$patch["control_type"]} ";
-                        }
-
-                        if (!empty($patch["remote_control"])) {
-                            $query .= ", `remote_control` = {$patch["remote_control"]} ";
-                        }
-
-                        $mysqli->query($query_start . $query . "WHERE `id` = {$patch["id"]};");
-                    }
-                }
+            if (!empty($patch["type"])) {
+                $query .= ", `type` = {$patch["type"]} ";
             }
+
+            if (!empty($patch["control_type"])) {
+                $query .= ", `control_type` = {$patch["control_type"]} ";
+            }
+
+            if (!empty($patch["remote_control"])) {
+                $query .= ", `remote_control` = {$patch["remote_control"]} ";
+            }
+
+            $mysqli->query($query_start . $query . "WHERE `id` = {$patch["id"]};");
         }
     }
 
@@ -63,25 +57,25 @@ try {
             if ($channel["type"] == -1) {
                 $mysqli->query("DELETE FROM `channels` WHERE `gid` = $gid");
             } else {
-                $query_start = "INSERT INTO `channels` (`sr70`, `type`, `channel`, `description`, `gid`) VALUES ({$channel["sr70"]}, {$channel["type"]}, {$channel["channel"]}, '{$channel["description"]}', $gid) ON DUPLICATE KEY UPDATE `gid` = $gid ";
+                $type = $channel["type"] ?? 0;
+                $query_start = "INSERT INTO `channels` (`sr70`, `type`, `channel`, `description`, `gid`) VALUES ({$channel["sr70"]}, {$type}, '{$channel["channel"]}', '{$channel["description"]}', $gid) ON DUPLICATE KEY UPDATE `gid` = $gid ";
                 $query = "";
                 try {
-
                     if (!empty($channel["type"])) {
                         $query .= ", `type` = {$channel["type"]} ";
                     }
 
-                    if (!empty($channel["control_type"])) {
-                        $query .= ", `channel` = {$channel["channel"]} ";
+                    if (!empty($channel["channel"])) {
+                        $query .= ", `channel` = '{$channel["channel"]}' ";
                     }
 
-                    if (!empty($channel["remote_control"])) {
-                        $query .= ", `description` = {$channel["description"]} ";
+                    if (!empty($channel["description"])) {
+                        $query .= ", `description` = '{$channel["description"]}' ";
                     }
 
                     $mysqli->query($query_start . $query);
                 } catch (Exception $e) {
-                    flushResponse(500, "Nekonzistentní databáze, prosím sestavte databázi odznovu!\n$query_start{$query}\n$e", $mysqli);
+                    flushResponse(500, "Nekonzistentní databáze, prosím sestavte databázi odznovu!\n$query_start $query\n$e", $mysqli);
                 }
             }
         }

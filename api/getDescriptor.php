@@ -9,7 +9,7 @@ $stations_result = $stations_sql->get_result();
 $stations = array();
 if (!empty($stations_result)) {
     if ($stations_result->num_rows > 0) {
-        $isLoggedUser = isset($_GET["pass"]) && trim($_GET["pass"]) == $phonesPassword;
+        $isLoggedUser = isset($_GET["pass"]) && in_array(trim($_GET["pass"]), $phonesPassword);
         $channels_sql = $isLoggedUser ? $mysqli->prepare('SELECT `type`, `channel`, `description`, `gid` FROM `channels` WHERE `sr70` = ? ORDER BY `type`') : $mysqli->prepare('SELECT `type`, `channel`, `description`, `gid` FROM `channels` WHERE `sr70` = ? AND `type` != 3 ORDER BY `type`;');
         while ($station = $stations_result->fetch_assoc()) {
             $channels = array();

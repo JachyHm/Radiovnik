@@ -23,7 +23,7 @@ $mysqli = new mysqli($host, $user, $pass, $db) or die($mysqli->error);
 $mysqli->set_charset("utf8");
 
 $captcha_secret = <SECRET_KEY>;
-$phonesPassword = <PHONES_PASSWORD>;
+$phonesPassword = <PHONES_PASSWORD_ARRAY>;
 $updatePassword = <UPDATE_PASSWORD>;
 
 if (!empty($_SERVER['HTTP_CLIENT_IP'])) { //check ip from share internet

@@ -1,6 +1,6 @@
-let cacheName = "radiovnik-v3";
-let siteUrl = "simp.jachyhm.cz";
-let filesToCache = [
+const CACHE_NAME = "radiovnik-v20261029-1";
+const SITE_URL = "simp.jachyhm.cz";
+const FILES_TO_CACHE = [
 	"/",
 	"/data.json",
 	"/favicon.ico",
@@ -38,8 +38,8 @@ AbortSignal.timeout ??= function timeout(ms) {
 
 self.addEventListener("install", function(e) {
 	e.waitUntil(
-		caches.open(cacheName).then(function(cache) {
-			return cache.addAll(filesToCache)
+		caches.open(CACHE_NAME).then((cache) => {
+			return cache.addAll(FILES_TO_CACHE)
 		})
 	)
 })
@@ -49,28 +49,36 @@ self.addEventListener("fetch", function(e) {
 	var host = url.hostname;
 	var fileURI = url.pathname;
 	const cleanURL = `${url.protocol}//${url.host}${url.pathname}`;
-	if (host == siteUrl && filesToCache.includes(fileURI)) {
+
+	if (host == SITE_URL && e.request.method == "GET" && FILES_TO_CACHE.includes(fileURI)) {
 		e.respondWith(
-			caches.open(cacheName).then(function(cache) {
-				return fetch(e.request, { signal: AbortSignal.timeout(5000) }).then((response) => {
+			caches.open(CACHE_NAME).then(async cache => {
+				try {
+					const response = await fetch(e.request, { signal: AbortSignal.timeout(5000) });
 					if (response.status < 400) {
 						cache.put(cleanURL, response.clone());
-					} else {
+					} else if (response.status < 500) {
 						cache.delete(cleanURL);
+					} else {
+						throw new Error(`${response.status}${response.statusText ? " " + response.statusText : ""}`);
 					}
 					console.log(`Returning online version of ${cleanURL}`);
 					return response;
-				},
-				() => {
-					console.log(`Returning cached version of ${cleanURL}`);
-					return cache.match(cleanURL);
-				}).catch((err) => {
-					console.log(`Fetch vailed with "${err}"\r\nReturning cached version of ${cleanURL}`);
-					return cache.match(cleanURL);
-				});
+				} catch (err) {
+					return await cache.match(cleanURL).then(cachedResponse => {
+						if (cachedResponse !== undefined) {
+							console.log(`Fetch failed with "${err}"\r\nReturning cached version of ${cleanURL}`);
+							return cachedResponse;
+						} else {
+							cache.delete(cleanURL);
+							console.log(`No cached version for ${cleanURL}, fallback to default behaviour`);
+							return fetch(e.request);
+						}
+					});
+				}
 			})
 		)
 	} else {
 		console.log(`Fallback to default behaviour for ${cleanURL}`);
 	}
-})
+});

@@ -484,7 +484,7 @@ class StationRow {
         if (data.remote_control > 0) {
             var remoteStation = jsonData.find(element => element.id == data.remote_control);
             if (remoteStation != null) {
-                description += ` z pracoviště <a href="#" onclick="document.getElementById('search').value = '${remoteStation.name}'; redrawStations()">${remoteStation.short_name}</a>`;
+                description += ` z pracoviště <a href="#" onclick="document.getElementById('search').value = '${remoteStation.abbreviation != "" ? remoteStation.abbreviation : remoteStation.name}'; redrawStations()" style="text-decoration:underline">${remoteStation.short_name}</a>`;
             }
         }
         return description;

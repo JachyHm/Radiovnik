@@ -2,6 +2,10 @@
 require_once "../simp_db.php";
 require_once "utils.php";
 
+if ($ip == "37.48.3.172") {
+    flushResponse(400, "Do-hro-ma-dy!!!", $mysqli);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     //if (isset($_POST["recaptcha_token"])) {
         /*$url = 'https://www.google.com/recaptcha/api/siteverify';
@@ -89,9 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 catch (Exception $e) {
                     $mysqli->query("DELETE FROM `transactions` WHERE `id` = $transaction_id");
-                    $mysqli->query("DELETE FROM `transaction_changes` WHERE `transaction_id` = $transaction_id");
-                    $mysqli->query("DELETE FROM `transaction_channels` WHERE `transaction_id` = $transaction_id");
-                    $mysqli->query("DELETE FROM `transaction_confirms` WHERE `transaction_id` = $transaction_id");
+                    $mysqli->query("DELETE FROM `transactions_changes` WHERE `transaction_id` = $transaction_id");
+                    $mysqli->query("DELETE FROM `transactions_channels` WHERE `transaction_id` = $transaction_id");
+                    $mysqli->query("DELETE FROM `transactions_confirms` WHERE `transaction_id` = $transaction_id");
                     flushResponse(500, "Nepovedlo se uložit provedené změny, zkuste to prosím později!<br>$e", $mysqli);
                 }
             }
